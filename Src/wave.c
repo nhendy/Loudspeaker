@@ -8,25 +8,55 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "stm32f0xx_hal.h"
+#include "dac.h"
+#include "tim.h"
 #include "wave.h"
 #include "port.h"
 #include "fatfs.h"
 #include "ff.h"
 
+
+//function declarations
+
+
+
+
 #define TRUE 1 
 #define FALSE 0
+typedef enum{READ_SUCCESS, READ_FAIL}Read;
 
-// WAVE header structure
+//Global variables
 
+//to help parsing
 unsigned char buffer4[4];
 unsigned char buffer2[2];
+struct HEADER header;
+FIL  fil;
+UINT br, bw;
+
+//used to transmit
 char str[100];
 
 
+//more info about the data
+long num_samples;
+long size_of_each_sample;
+float duration_in_seconds;
+long low_limit;
+long high_limit;
+long bytes_in_each_channel;
 
-FILE *ptr;
-char *filename;
-struct HEADER header;
+//data buffer containing one sample at a time
+char  data_buffer[100];
+
+//sample index
+int SampleNumber = 1;
+
+
+
+
+
 
 
 void ParseFile(char * file) {
@@ -53,9 +83,9 @@ void ParseFile(char * file) {
 //	strcat(filename, "/");
 //	strcat(filename, file);
 	FATFS FatFs;// = malloc(sizeof(FATFS));
-	FIL  fil;
+
 	FRESULT fm;
-	UINT br, bw;
+
 
 	fm = f_mount(&FatFs, USERPath, 1);
 
@@ -204,16 +234,18 @@ sprintf(str,"(41-44) Size of data chunk: %u \n", header.data_size);
 transmit(str);
 
  // calculate no.of samples
- long num_samples = (8 * header.data_size) / (header.channels * header.bits_per_sample);
+ num_samples = (8 * header.data_size) / (header.channels * header.bits_per_sample);
 sprintf(str,"Number of samples:%lu \n", num_samples);
 transmit(str);
- long size_of_each_sample = (header.channels * header.bits_per_sample) / 8;
+size_of_each_sample = (header.channels * header.bits_per_sample) / 8;
 sprintf(str,"Size of each sample:%ld bytes\n", size_of_each_sample);
 transmit(str);
  // calculate duration of file
- float duration_in_seconds = (float) header.overall_size / header.byterate;
+ duration_in_seconds = (float) header.overall_size / header.byterate;
  sprintf(str, "Approx.Duration in seconds=%d\n", duration_in_seconds);
  transmit(str);
+
+
 
  //sprintf(str,"Approx.Duration in h:m:s=%s\n", seconds_to_time(duration_in_seconds));
 
@@ -227,11 +259,13 @@ transmit(str);
 	if (1)
 	{ 
 		long i =0;
-		char * data_buffer= malloc(sizeof(char) * size_of_each_sample);
+		//int  * data_buffer = malloc(sizeof(char) * size_of_each_sample);
 		int  size_is_correct = TRUE;
 
 		// make sure that the bytes-per-sample is completely divisible by num.of channels
-		long bytes_in_each_channel = (size_of_each_sample / header.channels);
+		bytes_in_each_channel = (size_of_each_sample / header.channels);
+		sprintf(str, "bytes in each channel %ld\n", bytes_in_each_channel);
+		transmit(str);
 		if ((bytes_in_each_channel  * header.channels) != size_of_each_sample) {
 			sprintf(str,"Error: %ld x %ud <> %ld\n", bytes_in_each_channel, header.channels, size_of_each_sample);
 			transmit(str);
@@ -240,83 +274,93 @@ transmit(str);
  
 		if (size_is_correct) { 
 					// the valid amplitude range for values based on the bits per sample
-			long low_limit = 0l;
-			long high_limit = 0l;
+			low_limit = 0l;
+			high_limit = 0l;
 
 			switch (header.bits_per_sample) {
 				case 8:
 					low_limit = -128;
 					high_limit = 127;
 					break;
-				case 16:
-					low_limit = -32768;
-					high_limit = 32767;
-					break;
-				case 32:
-					low_limit = -2147483648;
-					high_limit = 2147483647;
-					break;
+//				case 16:
+//					low_limit = -32768;
+//					high_limit = 32767;
+//					break;
+//				case 32:
+//					low_limit = -2147483648;
+//					high_limit = 2147483647;
+//					break;
 			}					
 
 			sprintf(str,"\n\n.Valid range for data values : %ld to %ld \n", low_limit, high_limit);
 			transmit(str);
+
+			//LOOP
+//			for (i =1; i <= num_samples; i++) {
+//				sprintf(str,"==========Sample %ld / %ld=============\n", i, num_samples);
+//				transmit(str);
+//				read = f_read(&fil, (int * )data_buffer, sizeof(char) , &br);
+//				if (read == FR_OK) {
+//
+//					// dump the data read
+//					unsigned int  xchannels = 0;
+//					int data_in_channel = 0;
+//
+//					for (xchannels = 0; xchannels < header.channels; xchannels ++ ) {
+//						sprintf(str,"Channel#%d : ", (xchannels+1));
+//						transmit(str);
+//						// convert data from little endian to big endian based on bytes in each channel sample
+//						if (bytes_in_each_channel == 4) {
+//							data_in_channel =	data_buffer[0] |
+//												(data_buffer[1]<<8) |
+//												(data_buffer[2]<<16) |
+//												(data_buffer[3]<<24);
+//						}
+//						else if (bytes_in_each_channel == 2) {
+//							data_in_channel = data_buffer[0] |
+//												(data_buffer[1] << 8);
+//						}
+//						else if (bytes_in_each_channel == 1) {
+//
+//							data_in_channel = data_buffer[0];
+//						}
+//
+//						sprintf(str,"%d ", data_in_channel);
+//						transmit(str);
+//						// check if value was in range
+//						if (data_in_channel < low_limit || data_in_channel > high_limit)
+//							sprintf(str,"**value out of range\n");
+//						transmit(str);
+//						sprintf(str," | ");
+//						transmit(str);
+//					}
+//
+//					sprintf(str,"\n");
+//					transmit(str);
+//				}
+//				else {
+//					sprintf(str,"Error reading file. %d bytes\n", read);
+//					transmit(str);
+//					break;
+//				}
+//
+//			} // 	for (i =1; i <= num_samples; i++) {
+
+
+
 			for (i =1; i <= num_samples; i++) {
-				sprintf(str,"==========Sample %ld / %ld=============\n", i, num_samples);
-				transmit(str);
-				read = f_read(&fil, data_buffer, sizeof(data_buffer), &br);
-				if (read == FR_OK) {
-				
-					// dump the data read
-					unsigned int  xchannels = 0;
-					int data_in_channel = 0;
-
-					for (xchannels = 0; xchannels < header.channels; xchannels ++ ) {
-						sprintf(str,"Channel#%d : ", (xchannels+1));
-						transmit(str);
-						// convert data from little endian to big endian based on bytes in each channel sample
-						if (bytes_in_each_channel == 4) {
-							data_in_channel =	data_buffer[0] | 
-												(data_buffer[1]<<8) | 
-												(data_buffer[2]<<16) | 
-												(data_buffer[3]<<24);
-						}
-						else if (bytes_in_each_channel == 2) {
-							data_in_channel = data_buffer[0] |
-												(data_buffer[1] << 8);
-						}
-						else if (bytes_in_each_channel == 1) {
-							data_in_channel = data_buffer[0];
-						}
-
-						sprintf(str,"%d ", data_in_channel);
-						transmit(str);
-						// check if value was in range
-						if (data_in_channel < low_limit || data_in_channel > high_limit)
-							sprintf(str,"**value out of range\n");
-						transmit(str);
-						sprintf(str," | ");
-						transmit(str);
-					}
-
-					sprintf(str,"\n");
-					transmit(str);
-				}
-				else {
-					sprintf(str,"Error reading file. %d bytes\n", read);
-					transmit(str);
-					break;
-				}
-
-			} // 	for (i =1; i <= num_samples; i++) {
+				readSample(SampleNumber);
+				SampleNumber++;
+			}
 
 		} // 	if (size_is_correct) { 
-			free(data_buffer);	 	
-	 } // if (c == 'Y' || c == 'y') { 
+		//free(data_buffer);
+	 } // if (1) {
 	
  } //  if (header.format_type == 1) { 
 
 
- //free(data_buffer);
+// free(data_buffer);
  f_sync(&fil);
  fm = f_close(&fil);
 
@@ -328,10 +372,100 @@ transmit(str);
 
 
   // cleanup before quitting
- free(filename);
+ //free(filename);
  return ;
 
 }
+
+
+uint8_t convert(int8_t x)
+{
+	if(x == 0)
+	{
+		return 127;
+	}
+
+	return x + 128;
+
+
+}
+
+
+extern void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef *
+		htim)
+{
+	if(htim -> Instance == TIM6)
+	{
+		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+		readSample(SampleNumber);
+		SampleNumber++;
+		HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1,DAC_ALIGN_12B_R, data_buffer[0]);
+		HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
+
+
+	}
+}
+
+
+int readSample(int counter)
+{
+
+	int read;
+	int i = counter;
+
+
+	sprintf(str,"==========Sample %ld / %ld=============\n", i, num_samples);
+	transmit(str);
+	read = f_read(&fil, data_buffer, sizeof(char) * size_of_each_sample, &br);
+	if (read == FR_OK) {
+
+		// dump the data read
+		unsigned int  xchannels = 0;
+		int data_in_channel = 0;
+
+		for (xchannels = 0; xchannels < header.channels; xchannels ++ ) {
+			sprintf(str,"Channel#%d : ", (xchannels+1));
+			transmit(str);
+			// convert data from little endian to big endian based on bytes in each channel sample
+			if (bytes_in_each_channel == 4) {
+				data_in_channel =	data_buffer[0] |
+						(data_buffer[1]<<8) |
+						(data_buffer[2]<<16) |
+						(data_buffer[3]<<24);
+			}
+			else if (bytes_in_each_channel == 2) {
+				data_in_channel = data_buffer[0] |
+						(data_buffer[1] << 8);
+			}
+			else if (bytes_in_each_channel == 1) {
+				data_in_channel = data_buffer[0];
+			}
+
+			sprintf(str,"%d ", data_in_channel);
+			transmit(str);
+			// check if value was in range
+			if (data_in_channel < low_limit || data_in_channel > high_limit){
+				sprintf(str,"**value out of range\n");
+			transmit(str);}
+			sprintf(str," | ");
+			transmit(str);
+		}
+
+		sprintf(str,"\n");
+		transmit(str);
+	}
+	else {
+		sprintf(str,"Error reading file. %d bytes\n", read);
+		transmit(str);
+		return READ_FAIL;
+
+	}
+	return READ_SUCCESS;
+
+}
+
+
+
 
 /**
  * Convert seconds into hh:mm:ss format
