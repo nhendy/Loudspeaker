@@ -49,14 +49,18 @@
 #include "main.h"
 #include "stm32f0xx_hal.h"
 #include "dac.h"
-//#include "fatfs.h"
+#include "fatfs.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 #include "ff.h"
 
+
 /* USER CODE BEGIN Includes */
+
+#include "port.h"
+#include "wave.h"
 
 /* USER CODE END Includes */
 
@@ -76,6 +80,8 @@ void SystemClock_Config(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+
+
 
 /* USER CODE END 0 */
 
@@ -111,8 +117,10 @@ int main(void)
   MX_FATFS_Init();
 
   /* USER CODE BEGIN 2 */
+  HAL_TIM_Base_Start_IT(&htim6);
+  //TIM6->BDTR |=0x8000;
   transmit("HI\n");
-  ParseFile("temp.wav");
+  ParseFile("test.wav");
   /* USER CODE END 2 */
 
   /* Infinite loop */
