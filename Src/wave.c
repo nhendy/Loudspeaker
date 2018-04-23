@@ -22,7 +22,7 @@
 
 
 
-
+#define BUFF_SIZE 1024
 #define TRUE 1 
 #define FALSE 0
 typedef enum{READ_SUCCESS, READ_FAIL}Read;
@@ -52,15 +52,16 @@ long bytes_in_each_channel;
 //data buffer containing one sample at a time
 char  data_buffer[100];
 
-uint8_t rbuffer1[512];
-uint8_t rbuffer2[512];
-
+//uint8_t rbuffer[BUFF_SIZE];
+uint8_t rbuffer1[BUFF_SIZE];
+uint8_t rbuffer2[BUFF_SIZE];
+extern int completeFLAG;
 
 //sample index
 int SampleNumber = 1;
 int buffer_num = 1;
 
-
+extern DMA_HandleTypeDef hdma_dac1_ch1;
 
 
 
@@ -398,20 +399,6 @@ uint8_t convert(int8_t x)
 }
 
 
-extern void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef *
-		htim)
-{
-	if(htim -> Instance == TIM6)
-	{
-		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-		//		readSample(SampleNumber);
-		//		SampleNumber++;
-		//		HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1,DAC_ALIGN_12B_R, data_buffer[0]);
-		//		HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
-
-
-	}
-}
 
 
 void ReadData(void)
@@ -420,30 +407,40 @@ void ReadData(void)
 
 	while(!stopReading)
 	{
-		if(buffer_num == 1) {
-			if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, rbuffer1, 512, DAC_ALIGN_8B_R) != HAL_OK)
-			{
-				Error_Handler();
-			}
-			fr = f_read(&fil, rbuffer2, sizeof(uint8_t) * 512, &br);
-			buffer_num = 2;
-		}
-		else {
-			if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, rbuffer2, 512, DAC_ALIGN_8B_R) != HAL_OK)
-			{
-				Error_Handler();
-			}
-			fr = f_read(&fil, rbuffer1, sizeof(uint8_t) * 512, &br);
-			buffer_num = 1;
-		}
-		//		int i;
-		//		for(i = 0; i < 100; i++)
-		//		{
-		//			rbuffer[i] = convert(rbuffer[i]);
-		//		}
 
-		if(fr != FR_OK)
+		//fr = f_read(&fil, rbuffer, sizeof(uint8_t) * BUFF_SIZE, &br);
+		//		while(completeFLAG == 0)
+		//
+		//completeFLAG = 0;
+
+		if(buffer_num == 1)
 		{
+			if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *)rbuffer1, BUFF_SIZE, DAC_ALIGN_8B_R) != HAL_OK)
+			{
+				Error_Handler();
+			}
+			fr = f_read(&fil, rbuffer2, sizeof(uint8_t) * BUFF_SIZE, &br);
+			buffer_num = 2;
+
+
+		}
+		else
+		{
+			if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *) rbuffer2, BUFF_SIZE, DAC_ALIGN_8B_R) != HAL_OK)
+			{
+				Error_Handler();
+			}
+			fr = f_read(&fil, rbuffer1, sizeof(uint8_t) * BUFF_SIZE, &br);
+			buffer_num = 1;
+
+		}
+		if(fr != FR_OK || br < BUFF_SIZE)
+		{
+
+			//HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+			//HAL_DMA_Abort_IT(&hdma_dac1_ch1);
+
+			completeFLAG = 1;
 			f_sync(&fil);
 			f_close(&fil);
 			stopReading = 1;
@@ -452,70 +449,70 @@ void ReadData(void)
 }
 
 
-int readSample(int counter)
-{
+//int readSample(int counter)
+//{
+//
+//	int read;
+//	int i = counter;
+//
+//
+//	sprintf(str,"==========Sample %ld / %ld=============\n", i, num_samples);
+//	//transmit(str);
+//	read = f_read(&fil, data_buffer, sizeof(char) * size_of_each_sample, &br);
+//	if (read == FR_OK) {
+//
+//		// dump the data read
+//		unsigned int  xchannels = 0;
+//		int data_in_channel = 0;
+//
+//		for (xchannels = 0; xchannels < header.channels; xchannels ++ ) {
+//			sprintf(str,"Channel#%d : ", (xchannels+1));
+//			//transmit(str);
+//			// convert data from little endian to big endian based on bytes in each channel sample
+//			if (bytes_in_each_channel == 4) {
+//				data_in_channel =	data_buffer[0] |
+//						(data_buffer[1]<<8) |
+//						(data_buffer[2]<<16) |
+//						(data_buffer[3]<<24);
+//			}
+//			else if (bytes_in_each_channel == 2) {
+//				data_in_channel = data_buffer[0] |
+//						(data_buffer[1] << 8);
+//			}
+//			else if (bytes_in_each_channel == 1) {
+//				data_in_channel = data_buffer[0];
+//			}
+//
+//			sprintf(str,"%d ", data_in_channel);
+//			//transmit(str);
+//			// check if value was in range
+//			if (data_in_channel < low_limit || data_in_channel > high_limit){
+//				sprintf(str,"**value out of range\n");
+//				//transmit(str);
+//			}
+//			sprintf(str," | ");
+//			//transmit(str);
+//		}
+//
+//		sprintf(str,"\n");
+//		//transmit(str);
+//	}
+//	else {
+//		sprintf(str,"Error reading file. %d bytes\n", read);
+//		//transmit(str);
+//		return READ_FAIL;
+//
+//	}
+//	return READ_SUCCESS;
+//
+//}
 
-	int read;
-	int i = counter;
-
-
-	sprintf(str,"==========Sample %ld / %ld=============\n", i, num_samples);
-	//transmit(str);
-	read = f_read(&fil, data_buffer, sizeof(char) * size_of_each_sample, &br);
-	if (read == FR_OK) {
-
-		// dump the data read
-		unsigned int  xchannels = 0;
-		int data_in_channel = 0;
-
-		for (xchannels = 0; xchannels < header.channels; xchannels ++ ) {
-			sprintf(str,"Channel#%d : ", (xchannels+1));
-			//transmit(str);
-			// convert data from little endian to big endian based on bytes in each channel sample
-			if (bytes_in_each_channel == 4) {
-				data_in_channel =	data_buffer[0] |
-						(data_buffer[1]<<8) |
-						(data_buffer[2]<<16) |
-						(data_buffer[3]<<24);
-			}
-			else if (bytes_in_each_channel == 2) {
-				data_in_channel = data_buffer[0] |
-						(data_buffer[1] << 8);
-			}
-			else if (bytes_in_each_channel == 1) {
-				data_in_channel = data_buffer[0];
-			}
-
-			sprintf(str,"%d ", data_in_channel);
-			//transmit(str);
-			// check if value was in range
-			if (data_in_channel < low_limit || data_in_channel > high_limit){
-				sprintf(str,"**value out of range\n");
-				//transmit(str);
-			}
-			sprintf(str," | ");
-			//transmit(str);
-		}
-
-		sprintf(str,"\n");
-		//transmit(str);
-	}
-	else {
-		sprintf(str,"Error reading file. %d bytes\n", read);
-		//transmit(str);
-		return READ_FAIL;
-
-	}
-	return READ_SUCCESS;
-
-}
-
-extern void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac)
-{
-
-	HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_SET);
-	HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
-}
+//extern void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac)
+//{
+//
+//	HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_SET);
+//	HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+//}
 
 
 
