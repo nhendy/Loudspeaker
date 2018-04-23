@@ -131,15 +131,17 @@ int main(void)
 //  {
 //	  wavetab[i] = wavetab[i] << 2;
 //  }
-
   HAL_TIM_Base_Start(&htim6);
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 
 
-  if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, rbuffer, 100, DAC_ALIGN_8B_R) != HAL_OK)
-  {
-	  Error_Handler();
-  }
+  //HAL_DMA_Start_IT(&hdma_dac1_ch1rcAddress, DstAddress, DataLength)
+
+//
+// if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, rbuffer, 512, DAC_ALIGN_8B_R) != HAL_OK)
+//  {
+//	  Error_Handler();
+//  }
 
 
  // transmit("HI\n");
