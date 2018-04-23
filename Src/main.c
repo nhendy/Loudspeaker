@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
-  * File Name          : main.c
-  * Description        : Main program body
+  * @file           : main.c
+  * @brief          : Main program body
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -67,8 +67,8 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-extern uint8_t rbuffer[];
-extern uint32_t wavetab[];
+//extern uint8_t rbuffer[];
+//extern uint32_t wavetab[];
 
 const uint16_t sine_wave_array[32] = {2047, 1648, 1264, 910, 600,  345,
                     156, 39,  0,  39,  156,  345,
@@ -92,9 +92,13 @@ void SystemClock_Config(void);
 
 /* USER CODE END 0 */
 
+/**
+  * @brief  The application entry point.
+  *
+  * @retval None
+  */
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -123,7 +127,6 @@ int main(void)
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   MX_FATFS_Init();
-
   /* USER CODE BEGIN 2 */
 
 //  int i;
@@ -138,14 +141,14 @@ int main(void)
   //HAL_DMA_Start_IT(&hdma_dac1_ch1rcAddress, DstAddress, DataLength)
 
 //
-// if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, rbuffer, 512, DAC_ALIGN_8B_R) != HAL_OK)
+// if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *)rbuffer, 100, DAC_ALIGN_8B_R) != HAL_OK)
 //  {
 //	  Error_Handler();
 //  }
 
 
  // transmit("HI\n");
-  ParseFile("tone-8Khz.wav");
+ ParseFile("test.wav");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -161,8 +164,10 @@ int main(void)
 
 }
 
-/** System Clock Configuration
-*/
+/**
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
 
@@ -222,10 +227,11 @@ void SystemClock_Config(void)
 
 /**
   * @brief  This function is executed in case of error occurrence.
-  * @param  None
+  * @param  file: The file name as string.
+  * @param  line: The line in file as a number.
   * @retval None
   */
-void _Error_Handler(char * file, int line)
+void _Error_Handler(char *file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
 	HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
@@ -233,35 +239,32 @@ void _Error_Handler(char * file, int line)
   while(1) 
   {
   }
-  /* USER CODE END Error_Handler_Debug */ 
+  /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef USE_FULL_ASSERT
-
+#ifdef  USE_FULL_ASSERT
 /**
-   * @brief Reports the name of the source file and the source line number
-   * where the assert_param error has occurred.
-   * @param file: pointer to the source file name
-   * @param line: assert_param error line source number
-   * @retval None
-   */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t* file, uint32_t line)
-{
+{ 
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
-
 }
-
-#endif
-
-/**
-  * @}
-  */ 
+#endif /* USE_FULL_ASSERT */
 
 /**
   * @}
-*/ 
+  */
+
+/**
+  * @}
+  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

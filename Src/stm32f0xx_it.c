@@ -36,10 +36,11 @@
 #include "stm32f0xx_it.h"
 
 /* USER CODE BEGIN 0 */
-
+volatile int completeFLAG = 0;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern DMA_HandleTypeDef hdma_dac1_ch1;
 extern DAC_HandleTypeDef hdac1;
 extern TIM_HandleTypeDef htim6;
 extern UART_HandleTypeDef huart1;
@@ -69,6 +70,26 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f0xx.s).                    */
 /******************************************************************************/
+
+/**
+* @brief This function handles DMA1 channel 2 and 3 interrupts.
+*/
+void DMA1_Channel2_3_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Channel2_3_IRQn 0 */
+HAL_GPIO_WritePin(LD4_GPIO_Port,LD4_Pin,GPIO_PIN_SET);
+  /* USER CODE END DMA1_Channel2_3_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_dac1_ch1);
+  /* USER CODE BEGIN DMA1_Channel2_3_IRQn 1 */
+  if(__HAL_DMA_GET_FLAG(hdma_dac1_ch1, DMA_FLAG_TC3) || completeFLAG == 1)
+  {
+	  HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+	  HAL_DMA_Abort_IT(&hdma_dac1_ch1);
+	 // completeFLAG = 1;
+
+  }
+  /* USER CODE END DMA1_Channel2_3_IRQn 1 */
+}
 
 /**
 * @brief This function handles TIM6 global and DAC underrun error interrupts.

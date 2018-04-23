@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
-  * @file   fatfs.c
-  * @brief  Code for fatfs applications
+  * File Name          : dma.c
+  * Description        : This file provides code for the configuration
+  *                      of all the requested memory to memory DMA transfers.
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -45,42 +46,46 @@
   *
   ******************************************************************************
   */
+/* Includes ------------------------------------------------------------------*/
+#include "dma.h"
 
-#include "fatfs.h"
+/* USER CODE BEGIN 0 */
 
-uint8_t retUSER;    /* Return value for USER */
-char USERPath[4];   /* USER logical drive path */
-FATFS USERFatFS;    /* File system object for USER logical drive */
-FIL USERFile;       /* File object for USER */
+/* USER CODE END 0 */
 
-/* USER CODE BEGIN Variables */
+/*----------------------------------------------------------------------------*/
+/* Configure DMA                                                              */
+/*----------------------------------------------------------------------------*/
 
-/* USER CODE END Variables */    
+/* USER CODE BEGIN 1 */
 
-void MX_FATFS_Init(void) 
+/* USER CODE END 1 */
+
+/** 
+  * Enable DMA controller clock
+  */
+void MX_DMA_Init(void) 
 {
-  /*## FatFS: Link the USER driver ###########################*/
-  retUSER = FATFS_LinkDriver(&USER_Driver, USERPath);
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
 
-  /* USER CODE BEGIN Init */
-  /* additional user code for init */     
-  /* USER CODE END Init */
+  /* DMA interrupt init */
+  /* DMA1_Channel2_3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
+
 }
 
-/**
-  * @brief  Gets Time from RTC 
-  * @param  None
-  * @retval Time in DWORD
-  */
-//DWORD get_fattime(void)
-//{
-//  /* USER CODE BEGIN get_fattime */
-//////  return 0;
-//  /* USER CODE END get_fattime */
-//}
+/* USER CODE BEGIN 2 */
 
-/* USER CODE BEGIN Application */
-     
-/* USER CODE END Application */
+/* USER CODE END 2 */
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
