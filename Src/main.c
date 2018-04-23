@@ -49,13 +49,12 @@
 #include "main.h"
 #include "stm32f0xx_hal.h"
 #include "dac.h"
+#include "dma.h"
 #include "fatfs.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
-#include "ff.h"
-
 
 /* USER CODE BEGIN Includes */
 
@@ -68,7 +67,15 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+extern uint8_t rbuffer[];
+extern uint32_t wavetab[];
 
+const uint16_t sine_wave_array[32] = {2047, 1648, 1264, 910, 600,  345,
+                    156, 39,  0,  39,  156,  345,
+                    600, 910, 1264, 1648, 2048, 2447,
+                    2831, 3185, 3495, 3750, 3939, 4056,
+                    4095, 4056, 3939, 3750, 3495, 3185,
+                    2831, 2447};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -110,6 +117,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_DAC1_Init();
   MX_TIM6_Init();
   MX_USART1_UART_Init();
@@ -117,10 +125,25 @@ int main(void)
   MX_FATFS_Init();
 
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start_IT(&htim6);
-  //TIM6->BDTR |=0x8000;
-  transmit("HI\n");
-  ParseFile("test.wav");
+
+//  int i;
+//  for(i = 0; i < 125; i++)
+//  {
+//	  wavetab[i] = wavetab[i] << 2;
+//  }
+
+  HAL_TIM_Base_Start(&htim6);
+  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
+
+
+  if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, rbuffer, 100, DAC_ALIGN_8B_R) != HAL_OK)
+  {
+	  Error_Handler();
+  }
+
+
+ // transmit("HI\n");
+  ParseFile("tone-8Khz.wav");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -203,6 +226,7 @@ void SystemClock_Config(void)
 void _Error_Handler(char * file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
+	HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
   /* User can add his own implementation to report the HAL error return state */
   while(1) 
   {
