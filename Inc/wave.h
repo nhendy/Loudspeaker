@@ -18,5 +18,5 @@ struct HEADER {
 
 void ParseFile(char * file);
 int readSample(int counter);
-
+void ReadData(void);
 
