@@ -15,8 +15,35 @@ struct HEADER {
 	unsigned int data_size;						// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
 };
 
-
+//function declarations
 void ParseFile(char * file);
 int readSample(int counter);
-void ReadData(void);
+void Play(void);
+void InitializeHeader(void);
+
+
+
+
+#define BUFF_SIZE 512
+#define TRUE 1
+#define FALSE 0
+typedef enum{READ_SUCCESS, READ_FAIL}Read;
+
+//Global variables
+
+//to help parsing
+unsigned char buffer4[4];
+unsigned char buffer2[2];
+struct HEADER header;
+
+
+//more info about the data
+long num_samples;
+long size_of_each_sample;
+float duration_in_seconds;
+long low_limit;
+long high_limit;
+long bytes_in_each_channel;
+uint32_t rbuffer1[BUFF_SIZE];
+uint32_t rbuffer2[BUFF_SIZE];
 
