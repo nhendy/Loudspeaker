@@ -67,15 +67,6 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-//extern uint8_t rbuffer[];
-//extern uint32_t wavetab[];
-
-const uint16_t sine_wave_array[32] = {2047, 1648, 1264, 910, 600,  345,
-                    156, 39,  0,  39,  156,  345,
-                    600, 910, 1264, 1648, 2048, 2447,
-                    2831, 3185, 3495, 3750, 3939, 4056,
-                    4095, 4056, 3939, 3750, 3495, 3185,
-                    2831, 2447};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -128,13 +119,12 @@ int main(void)
   MX_SPI1_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
-
-
   HAL_TIM_Base_Start(&htim6);
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 
+  ParseFile("NancyAjram.wav");
+  Play();
 
- ParseFile("WeAreYoungFun-6.wav");
   /* USER CODE END 2 */
 
   /* Infinite loop */
