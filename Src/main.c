@@ -129,26 +129,12 @@ int main(void)
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
 
-//  int i;
-//  for(i = 0; i < 125; i++)
-//  {
-//	  wavetab[i] = wavetab[i] << 2;
-//  }
+
   HAL_TIM_Base_Start(&htim6);
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 
 
-  //HAL_DMA_Start_IT(&hdma_dac1_ch1rcAddress, DstAddress, DataLength)
-
-//
-// if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *)rbuffer, 100, DAC_ALIGN_8B_R) != HAL_OK)
-//  {
-//	  Error_Handler();
-//  }
-
-
- // transmit("HI\n");
- ParseFile("test.wav");
+ ParseFile("WeAreYoungFun-6.wav");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -234,7 +220,7 @@ void SystemClock_Config(void)
 void _Error_Handler(char *file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-	HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
   /* User can add his own implementation to report the HAL error return state */
   while(1) 
   {

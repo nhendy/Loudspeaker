@@ -36,7 +36,7 @@
 #include "stm32f0xx_it.h"
 
 /* USER CODE BEGIN 0 */
-volatile int completeFLAG = 0;
+volatile int completeFLAG = 1;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -77,17 +77,21 @@ void SysTick_Handler(void)
 void DMA1_Channel2_3_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Channel2_3_IRQn 0 */
+	if(__HAL_DMA_GET_FLAG(hdma_dac1_ch1, DMA_FLAG_TC3)  > 0)
+	  {
+		  completeFLAG = 1;
+		  HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+		  HAL_DMA_Abort_IT(&hdma_dac1_ch1);
+		 // completeFLAG = 1;
+
+	  }
 HAL_GPIO_WritePin(LD4_GPIO_Port,LD4_Pin,GPIO_PIN_SET);
   /* USER CODE END DMA1_Channel2_3_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_dac1_ch1);
+  __HAL_DMA_GET_TC_FLAG_INDEX(&hdma_dac1_ch1);
   /* USER CODE BEGIN DMA1_Channel2_3_IRQn 1 */
-  if(__HAL_DMA_GET_FLAG(hdma_dac1_ch1, DMA_FLAG_TC3) || completeFLAG == 1)
-  {
-	  HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
-	  HAL_DMA_Abort_IT(&hdma_dac1_ch1);
-	 // completeFLAG = 1;
+ // __HAL_DMA_GET_COUNTER(hdma_dac1_ch1);
 
-  }
   /* USER CODE END DMA1_Channel2_3_IRQn 1 */
 }
 

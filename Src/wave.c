@@ -22,7 +22,7 @@
 
 
 
-#define BUFF_SIZE 1024
+#define BUFF_SIZE 512
 #define TRUE 1 
 #define FALSE 0
 typedef enum{READ_SUCCESS, READ_FAIL}Read;
@@ -50,11 +50,11 @@ long high_limit;
 long bytes_in_each_channel;
 
 //data buffer containing one sample at a time
-char  data_buffer[100];
+//char  data_buffer[100];
 
 //uint8_t rbuffer[BUFF_SIZE];
-uint8_t rbuffer1[BUFF_SIZE];
-uint8_t rbuffer2[BUFF_SIZE];
+uint32_t rbuffer1[BUFF_SIZE];
+uint32_t rbuffer2[BUFF_SIZE];
 extern int completeFLAG;
 
 //sample index
@@ -68,27 +68,7 @@ extern DMA_HandleTypeDef hdma_dac1_ch1;
 
 void ParseFile(char * file) {
 
-	// filename = (char*) malloc(sizeof(char) * 1024);
-	// if (filename == NULL) {
-	//   sprintf(str,"Error in malloc\n");
-	//   //transmit(str);
-	//   exit(1);
-	// }
 
-	// get file path
-	//char cwd[1024];
-	// if (getcwd(cwd, sizeof(cwd)) != NULL) {
-	//
-	//	strcpy(filename, cwd);
-
-	// get filename from command line
-	// if (argc < 2) {
-	//   printf("No wave file specified\n");
-	//   return ;
-	// }
-
-	//	strcat(filename, "/");
-	//	strcat(filename, file);
 	FATFS FatFs;// = malloc(sizeof(FATFS));
 
 
@@ -99,6 +79,7 @@ void ParseFile(char * file) {
 	if(fr != FR_OK)
 	{
 		sprintf(str, "f_mount fail\n");
+		Error_Handler();
 		//transmit(str);
 	}
 
@@ -110,8 +91,9 @@ void ParseFile(char * file) {
 	if(fr != FR_OK)
 	{
 		sprintf(str, "f_open fail\n");
+		Error_Handler();
 		//transmit(str);
-		exit(1);
+
 	}
 
 
@@ -128,12 +110,7 @@ void ParseFile(char * file) {
 
 	// open file
 
-	// ptr = fopen(file, "rb");
-	// if (ptr == NULL) {
-	//	sprintf(str,"Error opening file\n");
-	//	//transmit(str);
-	//	exit(1);
-	// }
+
 
 	FRESULT read = 0;
 
@@ -143,12 +120,9 @@ void ParseFile(char * file) {
 
 
 	f_read(&fil, (unsigned char *) header.riff, sizeof(header.riff),&br);
-	sprintf(str,"(1-4): %s \n", header.riff);
-	//transmit(str);
 
 	read = f_read(&fil,(unsigned char *) buffer4, sizeof(buffer4), &br);
-	sprintf(str,"%u %u %u %u\n", buffer4[0], buffer4[1], buffer4[2], buffer4[3]);
-	//transmit(str);
+
 
 
 	// convert little endian to big endian 4 byte int
@@ -289,76 +263,20 @@ void ParseFile(char * file) {
 					low_limit = -128;
 					high_limit = 127;
 					break;
-					//				case 16:
-					//					low_limit = -32768;
-					//					high_limit = 32767;
-					//					break;
-					//				case 32:
-					//					low_limit = -2147483648;
-					//					high_limit = 2147483647;
-					//					break;
+				case 16:
+					low_limit = -32768;
+					high_limit = 32767;
+					break;
+				case 32:
+					low_limit = -2147483648;
+					high_limit = 2147483647;
+					break;
 				}
 
 				sprintf(str,"\n\n.Valid range for data values : %ld to %ld \n", low_limit, high_limit);
 				//transmit(str);
 
-				//LOOP
-				//			for (i =1; i <= num_samples; i++) {
-				//				sprintf(str,"==========Sample %ld / %ld=============\n", i, num_samples);
-				//				//transmit(str);
-				//				read = f_read(&fil, (int * )data_buffer, sizeof(char) , &br);
-				//				if (read == FR_OK) {
-				//
-				//					// dump the data read
-				//					unsigned int  xchannels = 0;
-				//					int data_in_channel = 0;
-				//
-				//					for (xchannels = 0; xchannels < header.channels; xchannels ++ ) {
-				//						sprintf(str,"Channel#%d : ", (xchannels+1));
-				//						//transmit(str);
-				//						// convert data from little endian to big endian based on bytes in each channel sample
-				//						if (bytes_in_each_channel == 4) {
-				//							data_in_channel =	data_buffer[0] |
-				//												(data_buffer[1]<<8) |
-				//												(data_buffer[2]<<16) |
-				//												(data_buffer[3]<<24);
-				//						}
-				//						else if (bytes_in_each_channel == 2) {
-				//							data_in_channel = data_buffer[0] |
-				//												(data_buffer[1] << 8);
-				//						}
-				//						else if (bytes_in_each_channel == 1) {
-				//
-				//							data_in_channel = data_buffer[0];
-				//						}
-				//
-				//						sprintf(str,"%d ", data_in_channel);
-				//						//transmit(str);
-				//						// check if value was in range
-				//						if (data_in_channel < low_limit || data_in_channel > high_limit)
-				//							sprintf(str,"**value out of range\n");
-				//						//transmit(str);
-				//						sprintf(str," | ");
-				//						//transmit(str);
-				//					}
-				//
-				//					sprintf(str,"\n");
-				//					//transmit(str);
-				//				}
-				//				else {
-				//					sprintf(str,"Error reading file. %d bytes\n", read);
-				//					//transmit(str);
-				//					break;
-				//				}
-				//
-				//			} // 	for (i =1; i <= num_samples; i++) {
 
-
-
-				//			for (i =1; i <= num_samples; i++) {
-				//				readSample(SampleNumber);
-				//				SampleNumber++;
-				//			}
 
 			} // 	if (size_is_correct) {
 			//free(data_buffer);
@@ -367,20 +285,9 @@ void ParseFile(char * file) {
 	} //  if (header.format_type == 1) {
 
 
-	// free(data_buffer);
-	// f_sync(&fil);
-	// fm = f_close(&fil);
-	//
-	// if(fm == FR_OK)
-	// {
-	//	 sprintf(str,"Closed file..\n");
-	//	 //transmit(str);
-	// }
-	//f_read(&fil, rbuffer1, sizeof(uint8_t) * 512, &br);
+
 	ReadData();
 
-	// cleanup before quitting
-	//free(filename);
 	return ;
 
 }
@@ -408,42 +315,38 @@ void ReadData(void)
 	while(!stopReading)
 	{
 
-		//fr = f_read(&fil, rbuffer, sizeof(uint8_t) * BUFF_SIZE, &br);
-		//		while(completeFLAG == 0)
-		//
-		//completeFLAG = 0;
-
-		if(buffer_num == 1)
+		if(buffer_num == 1 && completeFLAG == 1)
 		{
 			if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *)rbuffer1, BUFF_SIZE, DAC_ALIGN_8B_R) != HAL_OK)
 			{
 				Error_Handler();
 			}
 			fr = f_read(&fil, rbuffer2, sizeof(uint8_t) * BUFF_SIZE, &br);
+			completeFLAG = 0;
 			buffer_num = 2;
 
 
 		}
-		else
+		else if(buffer_num ==2 && completeFLAG == 1)
 		{
 			if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *) rbuffer2, BUFF_SIZE, DAC_ALIGN_8B_R) != HAL_OK)
 			{
 				Error_Handler();
 			}
 			fr = f_read(&fil, rbuffer1, sizeof(uint8_t) * BUFF_SIZE, &br);
+			while(completeFLAG == 0);
+			completeFLAG = 0;
 			buffer_num = 1;
 
 		}
-		if(fr != FR_OK || br < BUFF_SIZE)
+		if(f_eof(&fil) != 0)
 		{
 
-			//HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
-			//HAL_DMA_Abort_IT(&hdma_dac1_ch1);
-
 			completeFLAG = 1;
+			stopReading = 1;
 			f_sync(&fil);
 			f_close(&fil);
-			stopReading = 1;
+
 		}
 	}
 }
@@ -505,13 +408,6 @@ void ReadData(void)
 //	}
 //	return READ_SUCCESS;
 //
-//}
-
-//extern void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac)
-//{
-//
-//	HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_SET);
-//	HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
 //}
 
 
