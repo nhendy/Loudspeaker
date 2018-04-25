@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
+  * File Name          : main.c
+  * Description        : Main program body
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -55,11 +55,12 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
-
+#include <stm32f0xx_it.h>
 /* USER CODE BEGIN Includes */
 
 #include "port.h"
 #include "wave.h"
+#include "parser.h"
 
 /* USER CODE END Includes */
 
@@ -67,6 +68,23 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+extern uint8_t pauseFlag;
+extern uint8_t buttonPress;
+//extern int ffFlag;
+//extern int rewindFlag;
+//extern int skipFlag;
+//extern int prevFlag;
+//extern FILE_file FileList;
+
+
+
+
+typedef enum {PlayState, PauseState, RewindState}State;
+
+
+
+State _state = PlayState;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -74,22 +92,36 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+void updateState();
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
 
 
+void updateState()
+{
+	switch(pauseFlag)
+	{
+	case 1:
+		_state = PauseState;
+		break;
+	case 0:
+		_state = PlayState;
+		break;
+	}
+//	_state = _state == PauseState? PlayState : PauseState;
+//	if(rewindFlag == 1)
+//	{
+//		_state = RewindState;
+//	}
 
+
+}
 /* USER CODE END 0 */
 
-/**
-  * @brief  The application entry point.
-  *
-  * @retval None
-  */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -118,13 +150,21 @@ int main(void)
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   MX_FATFS_Init();
+  MX_TIM1_Init();
+
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim6);
+  HAL_TIM_Base_Start_IT(&htim1);
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 
-  ParseFile("NancyAjram.wav");
-  Play();
 
+
+
+  Mount();
+//  ParseDirectory();
+  ParseFile("sharmoofers.wav");
+
+ // Play();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -134,16 +174,34 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
+	  if(buttonPress)
+	  {
+		  buttonPress = 0;
+		  updateState();
+	  }
+
+	  switch(_state)
+	  {
+	  case PlayState:
+		  Play();
+		  break;
+	  case PauseState:
+		  break;
+//	  case RewindState:
+//		  CleanUp();
+
+		  break;
+	  }
+
+
 
   }
   /* USER CODE END 3 */
 
 }
 
-/**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+/** System Clock Configuration
+*/
 void SystemClock_Config(void)
 {
 
@@ -203,11 +261,10 @@ void SystemClock_Config(void)
 
 /**
   * @brief  This function is executed in case of error occurrence.
-  * @param  file: The file name as string.
-  * @param  line: The line in file as a number.
+  * @param  None
   * @retval None
   */
-void _Error_Handler(char *file, int line)
+void _Error_Handler(char * file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
 	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
@@ -215,32 +272,35 @@ void _Error_Handler(char *file, int line)
   while(1) 
   {
   }
-  /* USER CODE END Error_Handler_Debug */
+  /* USER CODE END Error_Handler_Debug */ 
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
+
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+   * @brief Reports the name of the source file and the source line number
+   * where the assert_param error has occurred.
+   * @param file: pointer to the source file name
+   * @param line: assert_param error line source number
+   * @retval None
+   */
 void assert_failed(uint8_t* file, uint32_t line)
-{ 
+{
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
+
 }
-#endif /* USE_FULL_ASSERT */
+
+#endif
 
 /**
   * @}
-  */
+  */ 
 
 /**
   * @}
-  */
+*/ 
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

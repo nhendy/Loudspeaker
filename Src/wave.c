@@ -17,188 +17,92 @@
 #include "ff.h"
 #include "dma.h"
 
-FIL  fil;
-UINT br, bw;
+extern FIL  fil;;
 FRESULT fr;
-FATFS FatFs;
-
 
 //data buffer containing one sample at a time
 //char  data_buffer[100];
-extern int completeFLAG;
+extern int XferCpltFlag;
+extern int pauseFlag;
 int buffer_num = 1;
-//sample index
+//sample indexv
 //int SampleNumber = 1;
 
-void ParseFile(char * file) {
-
-	fr = f_mount(&FatFs, USERPath, 1);
-	if(fr != FR_OK)
-	{
-		Error_Handler();
-	}
-
-	// open file
-	fr = f_open(&fil, file, FA_READ| FA_OPEN_EXISTING);
-
-	if(fr != FR_OK)
-	{
-		Error_Handler();
-	}
-
-
-	InitializeHeader();
-	return ;
-
-}
+extern DMA_HandleTypeDef hdma_dac1_ch1;
 
 
 
 
 void Play(void)
 {
-	int play = 1;
-
-	while(play)
+	UINT br;
+	while(XferCpltFlag)
 	{
-		while(completeFLAG)
+		if(buffer_num == 1)
 		{
-			if(buffer_num == 1)
+//			int i;
+//			for(i = 0; i < BUFF_SIZE; i++)
+//			{
+//				rbuffer2[i] = 0;
+//			}
+
+			if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *)rbuffer1, BUFF_SIZE, DAC_ALIGN_8B_R) != HAL_OK)
 			{
-				if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *)rbuffer1, BUFF_SIZE, DAC_ALIGN_8B_R) != HAL_OK)
-				{
-					Error_Handler();
-				}
-				fr = f_read(&fil, rbuffer2, sizeof(uint8_t) * BUFF_SIZE, &br);
-				completeFLAG = 0;
-				buffer_num = 2;
-
-
+				Error_Handler();
 			}
-			else if(buffer_num ==2)
+			while(XferCpltFlag == 0);
+			XferCpltFlag = 0;
+			fr = f_read(&fil, rbuffer2, sizeof(uint8_t) * BUFF_SIZE, &br);
+			buffer_num = 2;
+
+
+		}
+		else if(buffer_num ==2)
+		{
+			int i;
+			for(i = 0; i < BUFF_SIZE; i++)
 			{
-				if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *) rbuffer2, BUFF_SIZE, DAC_ALIGN_8B_R) != HAL_OK)
-				{
-					Error_Handler();
-				}
-				fr = f_read(&fil, rbuffer1, sizeof(uint8_t) * BUFF_SIZE, &br);
-				while(completeFLAG == 0);
-				completeFLAG = 0;
-				buffer_num = 1;
+				rbuffer1[i] = 0;
 			}
-
+			if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *) rbuffer2, BUFF_SIZE, DAC_ALIGN_8B_R) != HAL_OK)
+			{
+				Error_Handler();
+			}
+			XferCpltFlag = 0;
+			fr = f_read(&fil, rbuffer1, sizeof(uint8_t) * BUFF_SIZE, &br);
+			buffer_num = 1;
 		}
 
 		if(f_eof(&fil) != 0)
 		{
-			completeFLAG = 1;
-			play = 0;
-			f_sync(&fil);
-			f_close(&fil);
-
+			XferCpltFlag = 0;
+			CleanUp();
 		}
 	}
+
+
+
+	//}
 }
 
 
-void InitializeHeader(void)
+
+void CleanUp()
 {
-	f_read(&fil, header.riff, sizeof(header.riff), &br);
-	f_read(&fil, (unsigned char *) header.riff, sizeof(header.riff),&br);
-	f_read(&fil,(unsigned char *) buffer4, sizeof(buffer4), &br);
-	// convert little endian to big endian 4 byte int
-	header.overall_size  = buffer4[0] |
-			(buffer4[1]<<8) |
-			(buffer4[2]<<16) |
-			(buffer4[3]<<24);
+		HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_RESET);
+		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+		HAL_DMA_Abort_IT(&hdma_dac1_ch1);
 
-	f_read(&fil, header.wave, sizeof(header.wave), &br);
-	f_read(&fil,header.fmt_chunk_marker, sizeof(header.fmt_chunk_marker), &br);
-	f_read(&fil,buffer4, sizeof(buffer4), &br);
-	// convert little endian to big endian 4 byte integer
-	header.length_of_fmt = buffer4[0] |
-			(buffer4[1] << 8) |
-			(buffer4[2] << 16) |
-			(buffer4[3] << 24);
-	f_read(&fil, buffer2, sizeof(buffer2), &br);
-	header.format_type = buffer2[0] | (buffer2[1] << 8);
-	char format_name[10] = "";
-	if (header.format_type == 1)
-		strcpy(format_name,"PCM");
-	else if (header.format_type == 6)
-		strcpy(format_name, "A-law");
-	else if (header.format_type == 7)
-		strcpy(format_name, "Mu-law");
-
-
-	f_read(&fil, buffer2, sizeof(buffer2), &br);
-	header.channels = buffer2[0] | (buffer2[1] << 8);
-	f_read(&fil, buffer4, sizeof(buffer4), &br);
-	header.sample_rate = buffer4[0] |
-			(buffer4[1] << 8) |
-			(buffer4[2] << 16) |
-			(buffer4[3] << 24);
-	f_read(&fil, buffer4, sizeof(buffer4), &br);
-	header.byterate  = buffer4[0] |
-			(buffer4[1] << 8) |
-			(buffer4[2] << 16) |
-			(buffer4[3] << 24);
-	f_read(&fil, buffer2, sizeof(buffer2), &br);
-	header.block_align = buffer2[0] |
-			(buffer2[1] << 8);
-
-	f_read(&fil, buffer2, sizeof(buffer2), &br);
-
-	header.bits_per_sample = buffer2[0] |
-			(buffer2[1] << 8);
-
-	f_read(&fil, header.data_chunk_header, sizeof(header.data_chunk_header), &br);
-
-	f_read(&fil, buffer4, sizeof(buffer4), &br);
-	header.data_size = buffer4[0] |
-			(buffer4[1] << 8) |
-			(buffer4[2] << 16) |
-			(buffer4[3] << 24 );
-
-	// calculate no.of samples
-	num_samples = (8 * header.data_size) / (header.channels * header.bits_per_sample);
-	size_of_each_sample = (header.channels * header.bits_per_sample) / 8;
-	// calculate duration of file
-	duration_in_seconds = (float) header.overall_size / header.byterate;
-	// read each sample from data chunk if PCM
-	if (header.format_type == 1) { // PCM
-
-		int  size_is_correct = TRUE;
-
-		// make sure that the bytes-per-sample is completely divisible by num.of channels
-		bytes_in_each_channel = (size_of_each_sample / header.channels);
-
-		if ((bytes_in_each_channel  * header.channels) != size_of_each_sample) {
-			size_is_correct = FALSE;
+		int i;
+		for(i = 0; i < BUFF_SIZE; i++)
+		{
+			rbuffer1[i] = 0;
+			rbuffer2[i] = 0;
 		}
-
-		if (size_is_correct) {
-			// the valid amplitude range for values based on the bits per sample
-			low_limit = 0l;
-			high_limit = 0l;
-
-			switch (header.bits_per_sample) {
-			case 8:
-				low_limit = -128;
-				high_limit = 127;
-				break;
-			case 16:
-				low_limit = -32768;
-				high_limit = 32767;
-				break;
-			}
-
-		} // 	if (size_is_correct) {
-
-	} //  if (header.format_type == 1) {
+		f_sync(&fil);
+		f_close(&fil);
+		return;
 }
-
-
 
 
 //uint8_t convert(int8_t x)
