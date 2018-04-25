@@ -58,6 +58,20 @@
 
 #define B1_Pin GPIO_PIN_0
 #define B1_GPIO_Port GPIOA
+#define PLAY_Pin GPIO_PIN_4
+#define PLAY_GPIO_Port GPIOC
+#define FF_Pin GPIO_PIN_5
+#define FF_GPIO_Port GPIOC
+#define REWIND_Pin GPIO_PIN_0
+#define REWIND_GPIO_Port GPIOB
+#define NEXT_Pin GPIO_PIN_1
+#define NEXT_GPIO_Port GPIOB
+#define PREVIOUS_Pin GPIO_PIN_2
+#define PREVIOUS_GPIO_Port GPIOB
+#define ROT1_Pin GPIO_PIN_10
+#define ROT1_GPIO_Port GPIOB
+#define ROT2_Pin GPIO_PIN_11
+#define ROT2_GPIO_Port GPIOB
 #define LD4_Pin GPIO_PIN_8
 #define LD4_GPIO_Port GPIOC
 #define LD3_Pin GPIO_PIN_9
