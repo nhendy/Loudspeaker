@@ -16,52 +16,56 @@
 
 
 
+
+//FILE_file FileList;
 FATFS FatFs;
-FILE_file FileList;
 
 
 
 
-void ParseDirectory()
-{
 
 
 
-	FRESULT result = FR_OK;
-	DIR dir;
-	FILINFO fno;
-
-
-	result = f_opendir(&dir, "sub");
-	FileList.index = 0;
-
-	while(result == FR_OK)
-	{
-
-		result = f_readdir(&dir, &fno);
-		if(fno.fname[0] == 0 || result != FR_OK) {break ;}
-
-		//filename = fno.fname;
-
-		if(FileList.index < FILE_LIST)
-		{
-			if((fno.fattrib & AM_DIR) == 0)
-			{
-				if((strstr(fno.fname, "wav")) || (strstr(fno.fname, "WAV")))
-				{
-					strncpy((char *) FileList.files[FileList.index].name, (char *) fno.fname, FILE_NAME_SIZE);
-					FileList.index ++;
-
-				}
-			}
-		}
-
-
-	}
-
-
-
-}
+//void ParseDirectory()
+//{
+//
+//
+//
+//	FRESULT result = FR_OK;
+//	DIR dir;
+//	FILINFO fno;
+//
+//
+//	result = f_opendir(&dir, "");
+//	//FileList.index = 0;
+//	int i = 0;
+//	while(result == FR_OK)
+//	{
+//
+//		result = f_readdir(&dir, &fno);
+//		if(fno.fname[0] == 0 || result != FR_OK) {break ;}
+//
+//		//filename = fno.fname;
+//
+//		if(FileList.index < FILE_LIST)
+//		{
+//			if((fno.fattrib & AM_DIR) == 0)
+//			{
+//				if((strstr(fno.fname, "wav")) || (strstr(fno.fname, "WAV")))
+//				{
+//					strncpy((char *) FileList.files[FileList.index].name, (char *) fno.fname, FILE_NAME_SIZE);
+//					FileList.index ++;
+//
+//				}
+//			}
+//		}
+//
+//
+//	}
+//
+//
+//
+//}
 
 
 

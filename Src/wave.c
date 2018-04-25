@@ -30,7 +30,7 @@ uint8_t buttonPress;
 //int SampleNumber = 1;
 
 extern DMA_HandleTypeDef hdma_dac1_ch1;
-
+extern  uint8_t buttonPress;
 
 int isButtonPress()
 {
@@ -45,7 +45,8 @@ int isButtonPress()
 void Play(void)
 {
 	UINT br;
-	while(XferCpltFlag)
+	int stopReading = 0;
+	while( !stopReading)
 	{
 		if(buffer_num == 1)
 		{
@@ -70,10 +71,17 @@ void Play(void)
 			fr = f_read(&fil, rbuffer1, sizeof(uint8_t) * BUFF_SIZE, &br);
 			buffer_num = 1;
 		}
-
-
-		if(f_eof(&fil) != 0 || isButtonPress() == TRUE)
+		while(XferCpltFlag == 0);
+		XferCpltFlag = 0;
+		if(isButtonPress() == TRUE)
 		{
+			stopReading = 1;
+			buttonPress = 1;
+			XferCpltFlag = 0;
+		}
+		if(f_eof(&fil) != 0 )
+		{
+			stopReading = 1;
 			XferCpltFlag = 0;
 			CleanUp();
 
@@ -84,6 +92,15 @@ void Play(void)
 
 	//}
 }
+
+
+//void Rewind()
+//{
+//	FRESULT fr;
+//
+//
+//	fr = f_lseek(&fil, )
+//}
 
 
 

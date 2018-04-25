@@ -1,35 +1,35 @@
 /**
- ******************************************************************************
- * @file    stm32f0xx_it.c
- * @brief   Interrupt Service Routines.
- ******************************************************************************
- *
- * COPYRIGHT(c) 2018 STMicroelectronics
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *   1. Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
- *   2. Redistributions in binary form must reproduce the above copyright notice,
- *      this list of conditions and the following disclaimer in the documentation
- *      and/or other materials provided with the distribution.
- *   3. Neither the name of STMicroelectronics nor the names of its contributors
- *      may be used to endorse or promote products derived from this software
- *      without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************
- */
+  ******************************************************************************
+  * @file    stm32f0xx_it.c
+  * @brief   Interrupt Service Routines.
+  ******************************************************************************
+  *
+  * COPYRIGHT(c) 2018 STMicroelectronics
+  *
+  * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *   1. Redistributions of source code must retain the above copyright notice,
+  *      this list of conditions and the following disclaimer.
+  *   2. Redistributions in binary form must reproduce the above copyright notice,
+  *      this list of conditions and the following disclaimer in the documentation
+  *      and/or other materials provided with the distribution.
+  *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  *      may be used to endorse or promote products derived from this software
+  *      without specific prior written permission.
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  *
+  ******************************************************************************
+  */
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx.h"
@@ -40,20 +40,20 @@ volatile int XferCpltFlag = 1;
 // Obviously these are button debounce variables. Pretty self explanatory
 volatile uint8_t pausePrev= 0;
 volatile uint8_t pauseCurr = 0;
-volatile uint8_t pauseFlag = 0;
+volatile uint8_t pauseFlag = 1;
 volatile uint8_t buttonPress = 0;
 
-int ffPrev;
-int ffCurr;
-int ffFlag;
-
+//int ffPrev;
+//int ffCurr;
+//int ffFlag;
+//
 int rewindPrev;
 volatile int rewindCurr;
 volatile int rewindFlag;
-
-volatile int skipPrev;
-volatile int skipCurr;
-volatile int skipFlag;
+//
+volatile int nextPrev;
+volatile int nextCurr;
+volatile int nextFlag;
 
 volatile int prevPrev;
 volatile int prevCurr;
@@ -69,24 +69,23 @@ extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim6;
 extern UART_HandleTypeDef huart1;
 
-
 /******************************************************************************/
 /*            Cortex-M0 Processor Interruption and Exception Handlers         */ 
 /******************************************************************************/
 
 /**
- * @brief This function handles System tick timer.
- */
+* @brief This function handles System tick timer.
+*/
 void SysTick_Handler(void)
 {
-	/* USER CODE BEGIN SysTick_IRQn 0 */
+  /* USER CODE BEGIN SysTick_IRQn 0 */
 
-	/* USER CODE END SysTick_IRQn 0 */
-	HAL_IncTick();
-	HAL_SYSTICK_IRQHandler();
-	/* USER CODE BEGIN SysTick_IRQn 1 */
+  /* USER CODE END SysTick_IRQn 0 */
+  HAL_IncTick();
+  HAL_SYSTICK_IRQHandler();
+  /* USER CODE BEGIN SysTick_IRQn 1 */
 
-	/* USER CODE END SysTick_IRQn 1 */
+  /* USER CODE END SysTick_IRQn 1 */
 }
 
 /******************************************************************************/
@@ -97,11 +96,11 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
- * @brief This function handles DMA1 channel 2 and 3 interrupts.
- */
+* @brief This function handles DMA1 channel 2 and 3 interrupts.
+*/
 void DMA1_Channel2_3_IRQHandler(void)
 {
-	/* USER CODE BEGIN DMA1_Channel2_3_IRQn 0 */
+  /* USER CODE BEGIN DMA1_Channel2_3_IRQn 0 */
 	if(__HAL_DMA_GET_FLAG(hdma_dac1_ch1, DMA_FLAG_TC3)  > 0)
 	{
 		XferCpltFlag = 1;
@@ -111,23 +110,23 @@ void DMA1_Channel2_3_IRQHandler(void)
 
 	}
 	HAL_GPIO_WritePin(LD4_GPIO_Port,LD4_Pin,GPIO_PIN_SET);
-	/* USER CODE END DMA1_Channel2_3_IRQn 0 */
-	HAL_DMA_IRQHandler(&hdma_dac1_ch1);
-	/* USER CODE BEGIN DMA1_Channel2_3_IRQn 1 */
+  /* USER CODE END DMA1_Channel2_3_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_dac1_ch1);
+  /* USER CODE BEGIN DMA1_Channel2_3_IRQn 1 */
 	// __HAL_DMA_GET_COUNTER(hdma_dac1_ch1);
 
-	/* USER CODE END DMA1_Channel2_3_IRQn 1 */
+  /* USER CODE END DMA1_Channel2_3_IRQn 1 */
 }
 
 /**
- * @brief This function handles TIM1 break, update, trigger and commutation interrupts.
- */
+* @brief This function handles TIM1 break, update, trigger and commutation interrupts.
+*/
 void TIM1_BRK_UP_TRG_COM_IRQHandler(void)
 {
-	/* USER CODE BEGIN TIM1_BRK_UP_TRG_COM_IRQn 0 */
+  /* USER CODE BEGIN TIM1_BRK_UP_TRG_COM_IRQn 0 */
 	pausePrev = pauseCurr;
-	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-	pauseCurr = HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
+//	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+	pauseCurr = HAL_GPIO_ReadPin(PLAY_GPIO_Port, PLAY_Pin);
 	if(pausePrev == 0 && pauseCurr == 1){
 		buttonPress = 1;
 		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
@@ -136,68 +135,68 @@ void TIM1_BRK_UP_TRG_COM_IRQHandler(void)
 
 	}
 
-	ffPrev = ffCurr;
-	ffCurr = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_5);
-	if(ffPrev == 0 && ffCurr == 1){
-		ffFlag = 1;
-		buttonPress = 1;
-	}
-
-	rewindPrev = rewindCurr;
-	rewindCurr = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
-	if(rewindPrev == 0 && rewindCurr == 1) {
-		rewindFlag = 1;
-		buttonPress = 1;
-	}
-
-	skipPrev = skipCurr;
-	skipCurr = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1);
-	if(skipPrev == 0 && skipCurr == 1) {
-		skipFlag = 1;
+//	ffPrev = ffCurr;
+//	ffCurr = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_5);
+//	if(ffPrev == 0 && ffCurr == 1){
+//		ffFlag = 1;
+//		buttonPress = 1;
+//	}
+//
+//	rewindPrev = rewindCurr;
+//	rewindCurr = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
+//	if(rewindPrev == 0 && rewindCurr == 1) {
+//		rewindFlag = 1;
+//		buttonPress = 1;
+//	}
+//
+	nextPrev = nextCurr;
+	nextCurr = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1);
+	if(nextPrev == 0 && nextCurr == 1) {
+		nextFlag = 1;
 		buttonPress = 1;
 	}
 
 	prevPrev = prevCurr;
-	prevCurr = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_2);
+	prevCurr = HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
 	if(prevPrev == 0 && prevCurr == 1) {
 		prevFlag = 1;
 		buttonPress = 1;
 	}
 
-	/* USER CODE END TIM1_BRK_UP_TRG_COM_IRQn 0 */
-	HAL_TIM_IRQHandler(&htim1);
-	/* USER CODE BEGIN TIM1_BRK_UP_TRG_COM_IRQn 1 */
+  /* USER CODE END TIM1_BRK_UP_TRG_COM_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
+  /* USER CODE BEGIN TIM1_BRK_UP_TRG_COM_IRQn 1 */
 
-	/* USER CODE END TIM1_BRK_UP_TRG_COM_IRQn 1 */
+  /* USER CODE END TIM1_BRK_UP_TRG_COM_IRQn 1 */
 }
 
 /**
- * @brief This function handles TIM6 global and DAC underrun error interrupts.
- */
+* @brief This function handles TIM6 global and DAC underrun error interrupts.
+*/
 void TIM6_DAC_IRQHandler(void)
 {
-	/* USER CODE BEGIN TIM6_DAC_IRQn 0 */
+  /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
 
-	/* USER CODE END TIM6_DAC_IRQn 0 */
-	HAL_TIM_IRQHandler(&htim6);
-	HAL_DAC_IRQHandler(&hdac1);
-	/* USER CODE BEGIN TIM6_DAC_IRQn 1 */
+  /* USER CODE END TIM6_DAC_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim6);
+  HAL_DAC_IRQHandler(&hdac1);
+  /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
 
-	/* USER CODE END TIM6_DAC_IRQn 1 */
+  /* USER CODE END TIM6_DAC_IRQn 1 */
 }
 
 /**
- * @brief This function handles USART1 global interrupt / USART1 wake-up interrupt through EXTI line 25.
- */
+* @brief This function handles USART1 global interrupt / USART1 wake-up interrupt through EXTI line 25.
+*/
 void USART1_IRQHandler(void)
 {
-	/* USER CODE BEGIN USART1_IRQn 0 */
+  /* USER CODE BEGIN USART1_IRQn 0 */
 
-	/* USER CODE END USART1_IRQn 0 */
-	HAL_UART_IRQHandler(&huart1);
-	/* USER CODE BEGIN USART1_IRQn 1 */
+  /* USER CODE END USART1_IRQn 0 */
+  HAL_UART_IRQHandler(&huart1);
+  /* USER CODE BEGIN USART1_IRQn 1 */
 
-	/* USER CODE END USART1_IRQn 1 */
+  /* USER CODE END USART1_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
