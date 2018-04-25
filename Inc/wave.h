@@ -20,9 +20,9 @@ struct HEADER {
 int readSample(int counter);
 void Play(void);
 void CleanUp();
+int isButtonPress();
 
-
-#define BUFF_SIZE 1024
+#define BUFF_SIZE 200
 #define TRUE 1
 #define FALSE 0
 typedef enum{READ_SUCCESS, READ_FAIL}Read;

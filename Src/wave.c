@@ -25,13 +25,22 @@ FRESULT fr;
 extern int XferCpltFlag;
 extern int pauseFlag;
 int buffer_num = 1;
+uint8_t buttonPress;
 //sample indexv
 //int SampleNumber = 1;
 
 extern DMA_HandleTypeDef hdma_dac1_ch1;
 
 
-
+int isButtonPress()
+{
+	if(buttonPress == 1)
+	{
+		buttonPress = 0;
+		return TRUE;
+	}
+	return FALSE;
+}
 
 void Play(void)
 {
@@ -40,17 +49,11 @@ void Play(void)
 	{
 		if(buffer_num == 1)
 		{
-//			int i;
-//			for(i = 0; i < BUFF_SIZE; i++)
-//			{
-//				rbuffer2[i] = 0;
-//			}
 
 			if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *)rbuffer1, BUFF_SIZE, DAC_ALIGN_8B_R) != HAL_OK)
 			{
 				Error_Handler();
 			}
-			while(XferCpltFlag == 0);
 			XferCpltFlag = 0;
 			fr = f_read(&fil, rbuffer2, sizeof(uint8_t) * BUFF_SIZE, &br);
 			buffer_num = 2;
@@ -59,11 +62,6 @@ void Play(void)
 		}
 		else if(buffer_num ==2)
 		{
-			int i;
-			for(i = 0; i < BUFF_SIZE; i++)
-			{
-				rbuffer1[i] = 0;
-			}
 			if(HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *) rbuffer2, BUFF_SIZE, DAC_ALIGN_8B_R) != HAL_OK)
 			{
 				Error_Handler();
@@ -73,10 +71,12 @@ void Play(void)
 			buffer_num = 1;
 		}
 
-		if(f_eof(&fil) != 0)
+
+		if(f_eof(&fil) != 0 || isButtonPress() == TRUE)
 		{
 			XferCpltFlag = 0;
 			CleanUp();
+
 		}
 	}
 

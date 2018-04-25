@@ -14,29 +14,12 @@
 #include "parser.h"
 
 
-typedef struct{
-	uint8_t name[FILE_NAME_SIZE];
-}FILE_Line;
 
-typedef struct{
-	FILE_Line files[FILE_LIST];
-	uint8_t  index;
-}FILE_file;
 
 FATFS FatFs;
 FILE_file FileList;
 
-void Mount()
-{
-	FRESULT fr;
 
-
-	fr = f_mount(&FatFs, USERPath, 1);
-	if(fr != FR_OK)
-	{
-		Error_Handler();
-	}
-}
 
 
 void ParseDirectory()

@@ -140,24 +140,28 @@ void TIM1_BRK_UP_TRG_COM_IRQHandler(void)
 	ffCurr = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_5);
 	if(ffPrev == 0 && ffCurr == 1){
 		ffFlag = 1;
+		buttonPress = 1;
 	}
 
 	rewindPrev = rewindCurr;
 	rewindCurr = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
 	if(rewindPrev == 0 && rewindCurr == 1) {
 		rewindFlag = 1;
+		buttonPress = 1;
 	}
 
 	skipPrev = skipCurr;
 	skipCurr = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1);
 	if(skipPrev == 0 && skipCurr == 1) {
 		skipFlag = 1;
+		buttonPress = 1;
 	}
 
 	prevPrev = prevCurr;
 	prevCurr = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_2);
 	if(prevPrev == 0 && prevCurr == 1) {
 		prevFlag = 1;
+		buttonPress = 1;
 	}
 
 	/* USER CODE END TIM1_BRK_UP_TRG_COM_IRQn 0 */

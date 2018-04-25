@@ -3,7 +3,14 @@
 #define FILETYPE_DIR   0
 #define FILETYPE_FILE  1
 
+typedef struct{
+	uint8_t name[FILE_NAME_SIZE];
+}FILE_Line;
 
+typedef struct{
+	FILE_Line files[FILE_LIST];
+	uint8_t  index;
+}FILE_file;
 
 FIL  fil;
 //UINT br, bw;
