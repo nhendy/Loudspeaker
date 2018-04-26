@@ -21,6 +21,9 @@ int readSample(int counter);
 void Play(void);
 void CleanUp();
 int isButtonPress();
+int stillff();
+void FastForward();
+void Rewind(int increment);
 
 #define BUFF_SIZE 200
 #define TRUE 1
