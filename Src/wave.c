@@ -17,26 +17,41 @@
 #include "ff.h"
 #include "dma.h"
 
-extern FIL  fil;;
-FRESULT fr;
 
-//data buffer containing one sample at a time
-//char  data_buffer[100];
+uint8_t finishReading = 0;
+extern FIL  fil;
+FRESULT fr;
 extern int XferCpltFlag;
-extern int pauseFlag;
 int buffer_num = 1;
-uint8_t buttonPress;
-//sample indexv
-//int SampleNumber = 1;
+extern uint8_t buttonPress;
+extern int ffPrev;
+extern int ffCurr;
+extern int rewindPrev;
+extern int rewindCurr;
+extern PlayerState _state;
+
+
 
 extern DMA_HandleTypeDef hdma_dac1_ch1;
 extern  uint8_t buttonPress;
 
+
+int stillff()
+{
+	int retVal = ffCurr == 1 && ffPrev == 1? TRUE : FALSE;
+	return retVal;
+}
+
+int stillR()
+{
+	int retVal = rewindCurr == 1 && rewindPrev == 1? TRUE : FALSE;
+	return retVal;
+}
 int isButtonPress()
 {
 	if(buttonPress == 1)
 	{
-		buttonPress = 0;
+		//buttonPress = 0;
 		return TRUE;
 	}
 	return FALSE;
@@ -73,17 +88,38 @@ void Play(void)
 		}
 		while(XferCpltFlag == 0);
 		XferCpltFlag = 0;
+
+		if(getState() == RewindState)
+		{
+			Rewind(2*BUFF_SIZE);
+		}
+
+		if(getState() == FastForwardState && stillff() == FALSE)
+		{
+			stopReading = 1;
+			XferCpltFlag = 0;
+			return;
+		}
+		if(getState() == RewindState && stillR() == FALSE)
+		{
+			stopReading = 1;
+			XferCpltFlag = 0;
+			return;
+		}
+
 		if(isButtonPress() == TRUE)
 		{
 			stopReading = 1;
-			buttonPress = 1;
+			buttonPress = 0;
 			XferCpltFlag = 0;
+			return;
 		}
 		if(f_eof(&fil) != 0 )
 		{
 			stopReading = 1;
 			XferCpltFlag = 0;
 			CleanUp();
+			finishReading = 1;
 
 		}
 	}
@@ -93,32 +129,83 @@ void Play(void)
 	//}
 }
 
+void Rewind(int increment)
+{
+	if(f_eof(&fil) == 0)
+	{
 
-//void Rewind()
-//{
-//	FRESULT fr;
-//
-//
-//	fr = f_lseek(&fil, )
-//}
+		FRESULT fr;
+		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+		HAL_DMA_Abort_IT(&hdma_dac1_ch1);
+		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+
+		if(f_tell(&fil) != 44)
+		{
+			fr = f_lseek(&fil, f_tell(&fil) - increment);
+			if(fr != FR_OK)
+			{
+				Error_Handler();
+			}
+		}
+
+
+	}
+
+
+
+
+	if(f_eof(&fil) != 0)
+	{
+		CleanUp();
+	}
+}
+
+
+void FastForward()
+{
+
+	if(f_eof(&fil) == 0)
+	{
+
+		FRESULT fr;
+		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+		HAL_DMA_Abort_IT(&hdma_dac1_ch1);
+		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+
+
+		fr = f_lseek(&fil, f_tell(&fil) + 1);
+		if(fr != FR_OK)
+		{
+			Error_Handler();
+		}
+	}
+
+
+
+
+	if(f_eof(&fil) != 0)
+	{
+		CleanUp();
+	}
+}
 
 
 
 void CleanUp()
 {
-		HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_RESET);
-		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
-		HAL_DMA_Abort_IT(&hdma_dac1_ch1);
+	HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_RESET);
+	HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+	HAL_DMA_Abort_IT(&hdma_dac1_ch1);
 
-		int i;
-		for(i = 0; i < BUFF_SIZE; i++)
-		{
-			rbuffer1[i] = 0;
-			rbuffer2[i] = 0;
-		}
-		f_sync(&fil);
-		f_close(&fil);
-		return;
+	int i;
+	for(i = 0; i < BUFF_SIZE; i++)
+	{
+		rbuffer1[i] = 0;
+		rbuffer2[i] = 0;
+	}
+	f_sync(&fil);
+	f_close(&fil);
+	return;
 }
 
 
