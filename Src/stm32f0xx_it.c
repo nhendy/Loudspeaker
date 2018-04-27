@@ -1,41 +1,45 @@
 /**
- ******************************************************************************
- * @file    stm32f0xx_it.c
- * @brief   Interrupt Service Routines.
- ******************************************************************************
- *
- * COPYRIGHT(c) 2018 STMicroelectronics
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *   1. Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
- *   2. Redistributions in binary form must reproduce the above copyright notice,
- *      this list of conditions and the following disclaimer in the documentation
- *      and/or other materials provided with the distribution.
- *   3. Neither the name of STMicroelectronics nor the names of its contributors
- *      may be used to endorse or promote products derived from this software
- *      without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************
- */
+  ******************************************************************************
+  * @file    stm32f0xx_it.c
+  * @brief   Interrupt Service Routines.
+  ******************************************************************************
+  *
+  * COPYRIGHT(c) 2018 STMicroelectronics
+  *
+  * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *   1. Redistributions of source code must retain the above copyright notice,
+  *      this list of conditions and the following disclaimer.
+  *   2. Redistributions in binary form must reproduce the above copyright notice,
+  *      this list of conditions and the following disclaimer in the documentation
+  *      and/or other materials provided with the distribution.
+  *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  *      may be used to endorse or promote products derived from this software
+  *      without specific prior written permission.
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  *
+  ******************************************************************************
+  */
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx.h"
 #include "stm32f0xx_it.h"
 
 /* USER CODE BEGIN 0 */
+#include <string.h>
+#include "port.h"
+#include "main.h"
+
 volatile int XferCpltFlag = 1;
 // Obviously these are button debounce variables. Pretty self explanatory
 volatile uint8_t pausePrev= 0;
@@ -59,6 +63,20 @@ volatile int prevPrev;
 volatile int prevCurr;
 volatile int prevFlag = 0;
 
+volatile int rotPrev;
+volatile int rotCurr;
+volatile int rotFlag = 0;
+
+
+volatile int rotation = 0;
+volatile int cwFlag = 0;
+volatile int ccwFlag = 0;
+
+extern int _rcplt;
+static int8_t states[] = {0,-1,1,0,1,0,0,-1,-1,0,0,1,0,1,-1,0};
+uint8_t RotaryCurrentState = 0x00;
+uint8_t RotaryTransition = 0;
+int8_t RotaryPosition = 0;
 
 /* USER CODE END 0 */
 
@@ -74,18 +92,18 @@ extern UART_HandleTypeDef huart1;
 /******************************************************************************/
 
 /**
- * @brief This function handles System tick timer.
- */
+* @brief This function handles System tick timer.
+*/
 void SysTick_Handler(void)
 {
-	/* USER CODE BEGIN SysTick_IRQn 0 */
+  /* USER CODE BEGIN SysTick_IRQn 0 */
 
-	/* USER CODE END SysTick_IRQn 0 */
-	HAL_IncTick();
-	HAL_SYSTICK_IRQHandler();
-	/* USER CODE BEGIN SysTick_IRQn 1 */
+  /* USER CODE END SysTick_IRQn 0 */
+  HAL_IncTick();
+  HAL_SYSTICK_IRQHandler();
+  /* USER CODE BEGIN SysTick_IRQn 1 */
 
-	/* USER CODE END SysTick_IRQn 1 */
+  /* USER CODE END SysTick_IRQn 1 */
 }
 
 /******************************************************************************/
@@ -96,11 +114,11 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
- * @brief This function handles DMA1 channel 2 and 3 interrupts.
- */
+* @brief This function handles DMA1 channel 2 and 3 interrupts.
+*/
 void DMA1_Channel2_3_IRQHandler(void)
 {
-	/* USER CODE BEGIN DMA1_Channel2_3_IRQn 0 */
+  /* USER CODE BEGIN DMA1_Channel2_3_IRQn 0 */
 	if(__HAL_DMA_GET_FLAG(hdma_dac1_ch1, DMA_FLAG_TC3)  > 0)
 	{
 		XferCpltFlag = 1;
@@ -110,23 +128,23 @@ void DMA1_Channel2_3_IRQHandler(void)
 
 	}
 	HAL_GPIO_WritePin(LD4_GPIO_Port,LD4_Pin,GPIO_PIN_SET);
-	/* USER CODE END DMA1_Channel2_3_IRQn 0 */
-	HAL_DMA_IRQHandler(&hdma_dac1_ch1);
-	/* USER CODE BEGIN DMA1_Channel2_3_IRQn 1 */
+  /* USER CODE END DMA1_Channel2_3_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_dac1_ch1);
+  /* USER CODE BEGIN DMA1_Channel2_3_IRQn 1 */
 	// __HAL_DMA_GET_COUNTER(hdma_dac1_ch1);
 
-	/* USER CODE END DMA1_Channel2_3_IRQn 1 */
+  /* USER CODE END DMA1_Channel2_3_IRQn 1 */
 }
 
 /**
- * @brief This function handles TIM1 break, update, trigger and commutation interrupts.
- */
+* @brief This function handles TIM1 break, update, trigger and commutation interrupts.
+*/
 void TIM1_BRK_UP_TRG_COM_IRQHandler(void)
 {
-	/* USER CODE BEGIN TIM1_BRK_UP_TRG_COM_IRQn 0 */
+  /* USER CODE BEGIN TIM1_BRK_UP_TRG_COM_IRQn 0 */
 	pausePrev = pauseCurr;
 	//HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-	pauseCurr = HAL_GPIO_ReadPin(PLAY_GPIO_Port, PLAY_Pin) == 0? 1 : 0;
+	pauseCurr = HAL_GPIO_ReadPin(PLAY_GPIO_Port, PLAY_Pin ) == 0? 1 : 0;
 	if(pausePrev == 0 && pauseCurr == 1){
 		buttonPress = 1;
 		pauseFlag = !pauseFlag;
@@ -137,7 +155,7 @@ void TIM1_BRK_UP_TRG_COM_IRQHandler(void)
 	ffPrev = ffCurr;
 	ffCurr = HAL_GPIO_ReadPin(FF_GPIO_Port, FF_Pin) == 0 ? 1: 0;
 	if(ffPrev == 0 && ffCurr == 1){
-		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+		//HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 
 		ffFlag = 1;
 		buttonPress = 1;
@@ -166,40 +184,99 @@ void TIM1_BRK_UP_TRG_COM_IRQHandler(void)
 		buttonPress = 1;
 	}
 
-	/* USER CODE END TIM1_BRK_UP_TRG_COM_IRQn 0 */
-	HAL_TIM_IRQHandler(&htim1);
-	/* USER CODE BEGIN TIM1_BRK_UP_TRG_COM_IRQn 1 */
+	rotPrev = rotCurr;
+	rotCurr = HAL_GPIO_ReadPin(ROTB_GPIO_Port, ROTB_Pin) == 0? 1 : 0;
+	if(rotPrev == 0 && rotCurr == 1) {
 
-	/* USER CODE END TIM1_BRK_UP_TRG_COM_IRQn 1 */
+		rotFlag = 1;
+		buttonPress = 1;
+	}
+
+
+
+
+	RotaryCurrentState = (HAL_GPIO_ReadPin(ROT1_GPIO_Port, ROT1_Pin) << 1) |(HAL_GPIO_ReadPin(ROT2_GPIO_Port, ROT2_Pin)) ;
+	RotaryTransition = RotaryTransition << 2 | RotaryCurrentState;
+	RotaryPosition = RotaryPosition + states[RotaryTransition & 0x0F];
+	if (RotaryPosition == 4)
+	{
+		HAL_GPIO_TogglePin(LD4_GPIO_Port,LD4_Pin);
+		RotaryPosition = 0;
+//		buttonPress = 1;
+		cwFlag = 1;
+		rotation = 1;
+
+	}
+	//CCW Transition
+	else if (RotaryPosition == -4)
+	{
+		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+		RotaryPosition = 0;
+		ccwFlag = 1;
+//		buttonPress = 1;
+		rotation = 1;
+	}
+
+  /* USER CODE END TIM1_BRK_UP_TRG_COM_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
+  /* USER CODE BEGIN TIM1_BRK_UP_TRG_COM_IRQn 1 */
+
+  /* USER CODE END TIM1_BRK_UP_TRG_COM_IRQn 1 */
 }
 
 /**
- * @brief This function handles TIM6 global and DAC underrun error interrupts.
- */
+* @brief This function handles TIM6 global and DAC underrun error interrupts.
+*/
 void TIM6_DAC_IRQHandler(void)
 {
-	/* USER CODE BEGIN TIM6_DAC_IRQn 0 */
+  /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
 
-	/* USER CODE END TIM6_DAC_IRQn 0 */
-	HAL_TIM_IRQHandler(&htim6);
-	HAL_DAC_IRQHandler(&hdac1);
-	/* USER CODE BEGIN TIM6_DAC_IRQn 1 */
+  /* USER CODE END TIM6_DAC_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim6);
+  HAL_DAC_IRQHandler(&hdac1);
+  /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
 
-	/* USER CODE END TIM6_DAC_IRQn 1 */
+  /* USER CODE END TIM6_DAC_IRQn 1 */
 }
 
 /**
- * @brief This function handles USART1 global interrupt / USART1 wake-up interrupt through EXTI line 25.
- */
+* @brief This function handles USART1 global interrupt / USART1 wake-up interrupt through EXTI line 25.
+*/
 void USART1_IRQHandler(void)
 {
-	/* USER CODE BEGIN USART1_IRQn 0 */
+  /* USER CODE BEGIN USART1_IRQn 0 */
+	if(_rcplt == 1) {
+		_rcplt = 0;
+		if(strcmp(Rdata, "PL") == 0 ) {
+			//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_9);
+			pauseFlag = 0;
+		}
+		if(strcmp(Rdata, "PA") == 0 ) {
+			HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_9);
+			pauseFlag = 1;
+		}
+		if(strcmp(Rdata, "FF") == 0 ) {
+			HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_9);
+			ffFlag = 1;
+		}
+		if(strcmp(Rdata, "RW") == 0 ) {
+			HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_9);
+			rewindFlag = 1;
+		}
+		if(strcmp(Rdata, "SK") == 0 ) {
+			HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_9);
+			nextFlag = 1;
+		}
+		if(strcmp(Rdata, "PR") == 0 ) {
+			HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_9);
+			prevFlag = 1;
+		}
+	}
+  /* USER CODE END USART1_IRQn 0 */
+  HAL_UART_IRQHandler(&huart1);
+  /* USER CODE BEGIN USART1_IRQn 1 */
 
-	/* USER CODE END USART1_IRQn 0 */
-	HAL_UART_IRQHandler(&huart1);
-	/* USER CODE BEGIN USART1_IRQn 1 */
-
-	/* USER CODE END USART1_IRQn 1 */
+  /* USER CODE END USART1_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

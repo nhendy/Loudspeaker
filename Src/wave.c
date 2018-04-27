@@ -30,10 +30,31 @@ extern int rewindPrev;
 extern int rewindCurr;
 extern PlayerState _state;
 
-
+extern int _rcplt;
+extern int rotation;
 
 extern DMA_HandleTypeDef hdma_dac1_ch1;
 extern  uint8_t buttonPress;
+
+
+
+
+
+int isRotation()
+{
+	if(rotation == 1)
+	{
+		rotation = 0;
+		return TRUE;
+	}
+
+	return FALSE ;
+}
+
+int isReceive()
+{
+	return _rcplt == 1? TRUE : FALSE;
+}
 
 
 int stillff()
@@ -89,6 +110,21 @@ void Play(void)
 		while(XferCpltFlag == 0);
 		XferCpltFlag = 0;
 
+
+		if(getState() == Increase && isButtonPress() == TRUE)
+		{
+			stopReading = 1;
+			XferCpltFlag = 0;
+			return;
+		}
+
+		if(getState() == Increase && isRotation() == TRUE)
+		{
+			stopReading = 1;
+			XferCpltFlag = 0;
+			return;
+		}
+
 		if(getState() == RewindState)
 		{
 			Rewind(2*BUFF_SIZE);
@@ -107,8 +143,9 @@ void Play(void)
 			return;
 		}
 
-		if(isButtonPress() == TRUE)
+		if(isButtonPress() == TRUE || isReceive() == TRUE)
 		{
+			//			_rcplt = 0;
 			stopReading = 1;
 			buttonPress = 0;
 			XferCpltFlag = 0;
@@ -161,7 +198,7 @@ void Rewind(int increment)
 }
 
 
-void FastForward()
+void FastForward(int increment)
 {
 
 	if(f_eof(&fil) == 0)
@@ -173,7 +210,7 @@ void FastForward()
 		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 
 
-		fr = f_lseek(&fil, f_tell(&fil) + 1);
+		fr = f_lseek(&fil, f_tell(&fil) + increment);
 		if(fr != FR_OK)
 		{
 			Error_Handler();

@@ -1,5 +1,5 @@
-#define FILE_NAME_SIZE 20
-#define FILE_LIST	   5     //n0. of files in SD card
+#define FILE_NAME_SIZE 30
+#define FILE_LIST	   20     //n0. of files in SD card
 #define FILETYPE_DIR   0
 #define FILETYPE_FILE  1
 
