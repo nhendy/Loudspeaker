@@ -22,8 +22,9 @@ void Play(void);
 void CleanUp();
 int isButtonPress();
 int stillff();
-void FastForward();
+void FastForward(int increment);
 void Rewind(int increment);
+int isReceive();
 
 #define BUFF_SIZE 200
 #define TRUE 1
